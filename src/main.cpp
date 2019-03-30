@@ -120,6 +120,22 @@ void goAroundObstacle() {
     drive(-255);
     delay(300);
     turn(-PI / 2 + offset);
+
+    drive(255);
+
+    long startTime = millis();
+    long endTime = startTime + 3000;
+
+    while (Enes100Simulation.readDistanceSensor(0) > 0.2 && millis() < endTime)
+      ;
+
+    if (millis() < endTime) {
+      turn(-PI / 4);
+    }
+
+    while (millis() < endTime)
+      ;
+
   } else {
     // go up
     if (leftSensor > 0.1) {
@@ -131,11 +147,23 @@ void goAroundObstacle() {
     drive(-255);
     delay(300);
     turn(PI / 2 - offset);
+
+    drive(255);
+
+    long startTime = millis();
+    long endTime = startTime + 3000;
+
+    while (Enes100Simulation.readDistanceSensor(2) > 0.2 && millis() < endTime)
+      ;
+
+    if (millis() < endTime) {
+      turn(PI / 4);
+    }
+
+    while (millis() < endTime)
+      ;
   }
 
-  // move forward
-  drive(255);
-  delay(3500);
   stop();
 }
 
