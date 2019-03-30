@@ -27,43 +27,71 @@ void setup() {
 }
 
 void loop() {
-  if (Enes100Simulation.readDistanceSensor(0) < 0.1 ||
-      Enes100Simulation.readDistanceSensor(2) < 0.1) {
-    goAroundObstacle();
+  while (!Enes100Simulation.updateLocation()) {
+    Enes100Simulation.println("Unable to update Location");
   }
 
-  double targetAngle = getAngleToDest();
+  Enes100Simulation.print("Current X: ");
+  Enes100Simulation.println(Enes100Simulation.location.x);
+  Enes100Simulation.print("Current Y: ");
+  Enes100Simulation.println(Enes100Simulation.location.y);
 
-  if (getDistToDest() > 0.1) {
-    if (Enes100Simulation.location.x > Enes100Simulation.destination.x) {
-      if (targetAngle < 0) {
-        targetAngle += PI;
-      } else {
-        targetAngle -= PI;
+  if (Enes100Simulation.location.x < 1 && Enes100Simulation.location.y > 0.45) {
+    turn(-PI / 2);
+    drive(255);
+    delay(1000);
+    stop();
+  } else if (Enes100Simulation.location.x < 3) {
+    turn(0);
+    drive(255);
+    while (Enes100Simulation.readDistanceSensor(0) > 0.3 &&
+           Enes100Simulation.readDistanceSensor(2) > 0.3 &&
+           Enes100Simulation.location.x < 3) {
+      while (!Enes100Simulation.updateLocation()) {
+        Enes100Simulation.println("Unable to update Location");
       }
     }
 
-    Enes100Simulation.print("Distance to destination: ");
-    Enes100Simulation.println(getDistToDest());
-
-    Enes100Simulation.print("Target Angle: ");
-    Enes100Simulation.println(targetAngle * 180 / PI);
-
-    // turn to face destination
-    turn(targetAngle);
-
-    // move forward
-    drive(255);
-
-    if (getDistToDest() < 0.5) {
-      delay(100);
-    } else {
-      delay(1000);
-    }
-
-    // stop motors
     stop();
+    if (Enes100Simulation.readDistanceSensor(0) <= 0.3 ||
+        Enes100Simulation.readDistanceSensor(2) <= 0.3) {
+      goAroundObstacle();
+    }
+  } else {
+    double targetAngle = getAngleToDest();
+    if (getDistToDest() > 0.1) {
+      if (Enes100Simulation.location.x > Enes100Simulation.destination.x) {
+        if (targetAngle < 0) {
+          targetAngle += PI;
+        } else {
+          targetAngle -= PI;
+        }
+      }
+
+      Enes100Simulation.print("Distance to destination: ");
+      Enes100Simulation.println(getDistToDest());
+
+      Enes100Simulation.print("Target Angle: ");
+      Enes100Simulation.println(targetAngle * 180 / PI);
+
+      // turn to face destination
+      turn(targetAngle);
+
+      // move forward
+      drive(255);
+
+      if (getDistToDest() < 0.5) {
+        delay(100);
+      } else {
+        delay(1000);
+      }
+
+      // stop motors
+      stop();
+    }
   }
+
+  stop();
 }
 
 double getAngleToDest() {
@@ -97,71 +125,30 @@ double getDistToDest() {
 
 void goAroundObstacle() {
   Enes100Simulation.println("Avoiding Obstacle");
+  turn(PI / 4);
+  drive(255);
+  while (!Enes100Simulation.updateLocation()) {
+    Enes100Simulation.println("Unable to update Location");
+  }
+  double currentX = Enes100Simulation.location.x;
+  double targetX = currentX + 0.55;
 
-  Enes100Simulation.println(Enes100Simulation.location.y);
-
-  double rightSensor = Enes100Simulation.readDistanceSensor(2);
-  double leftSensor = Enes100Simulation.readDistanceSensor(0);
-
-  // back up a bit
-  drive(-255);
-  delay(500);
-
-  double offset = 0;
-
-  if (Enes100Simulation.location.y > ARENA_HEIGHT / 2) {
-    // go down
-    if (rightSensor > 0.1) {
-      // Give an angle if right sensor is clear
-      // offset = PI / 8;
+  while (currentX < targetX) {
+    while (!Enes100Simulation.updateLocation()) {
+      Enes100Simulation.println("Unable to update Location");
     }
-    // get close to obstacle
-    turn(-PI / 2 - PI / 4);
-    drive(-255);
-    delay(300);
-    turn(-PI / 2 + offset);
-
-    drive(255);
-
-    long startTime = millis();
-    long endTime = startTime + 3000;
-
-    while (Enes100Simulation.readDistanceSensor(0) > 0.2 && millis() < endTime)
-      ;
-
-    if (millis() < endTime) {
-      turn(-PI / 4);
+    currentX = Enes100Simulation.location.x;
+    delay(100);
+  }
+  stop();
+  turn(-PI / 3);
+  drive(255);
+  double currentY = Enes100Simulation.location.y;
+  while (currentY > 0.4) {
+    while (!Enes100Simulation.updateLocation()) {
+      Enes100Simulation.println("Unable to update Location");
     }
-
-    while (millis() < endTime)
-      ;
-
-  } else {
-    // go up
-    if (leftSensor > 0.1) {
-      // Give an angle if right sensor is clear
-      // offset = PI / 8;
-    }
-    // get close to obstacle
-    turn(PI / 2 + PI / 4);
-    drive(-255);
-    delay(300);
-    turn(PI / 2 - offset);
-
-    drive(255);
-
-    long startTime = millis();
-    long endTime = startTime + 3000;
-
-    while (Enes100Simulation.readDistanceSensor(2) > 0.2 && millis() < endTime)
-      ;
-
-    if (millis() < endTime) {
-      turn(PI / 4);
-    }
-
-    while (millis() < endTime)
-      ;
+    currentY = Enes100Simulation.location.y;
   }
 
   stop();
