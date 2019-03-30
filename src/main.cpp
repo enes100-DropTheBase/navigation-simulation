@@ -110,25 +110,32 @@ void goAroundObstacle() {
   double offset = 0;
 
   if (Enes100Simulation.location.y > ARENA_HEIGHT / 2) {
-    // go down and around
+    // go down
     if (rightSensor > 0.1) {
       // Give an angle if right sensor is clear
-      offset = PI / 8;
+      // offset = PI / 8;
     }
+    // get close to obstacle
+    turn(-PI / 2 - PI / 4);
+    drive(-255);
+    delay(300);
     turn(-PI / 2 + offset);
   } else {
-    // go up and around
+    // go up
     if (leftSensor > 0.1) {
       // Give an angle if right sensor is clear
-      offset = PI / 8;
+      // offset = PI / 8;
     }
-
+    // get close to obstacle
+    turn(PI / 2 + PI / 4);
+    drive(-255);
+    delay(300);
     turn(PI / 2 - offset);
   }
 
   // move forward
   drive(255);
-  delay(3000);
+  delay(3500);
   stop();
 }
 
