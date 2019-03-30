@@ -138,12 +138,14 @@ void goAroundObstacle() {
     if (Enes100Simulation.location.y < ARENA_WIDTH / 3) {
       if (Enes100Simulation.readDistanceSensor(0) >
               Enes100Simulation.readDistanceSensor(2) &&
-          Enes100Simulation.readDistanceSensor(2) < 0.3) {
+          Enes100Simulation.readDistanceSensor(2) < 0.2) {
         offset += PI / 20;
+        Enes100Simulation.println("Compensating left");
         turn(PI / 4 + offset);
       } else if (Enes100Simulation.readDistanceSensor(0) <
                      Enes100Simulation.readDistanceSensor(2) &&
-                 Enes100Simulation.readDistanceSensor(0) < 0.3) {
+                 Enes100Simulation.readDistanceSensor(0) < 0.2) {
+        Enes100Simulation.println("Compensating right");
         offset -= PI / 20;
         turn(PI / 4 + offset);
       }
@@ -152,12 +154,21 @@ void goAroundObstacle() {
     delay(100);
   }
   stop();
-  turn(-PI / 3);
-  drive(255);
-  double currentY = Enes100Simulation.location.y;
-  while (currentY > 0.4) {
-    updateLocation();
-    currentY = Enes100Simulation.location.y;
+  updateLocation();
+
+  Enes100Simulation.print("Current X: ");
+  Enes100Simulation.println(Enes100Simulation.location.x);
+  Enes100Simulation.print("Current Y: ");
+  Enes100Simulation.println(Enes100Simulation.location.y);
+
+  if (Enes100Simulation.location.x < 2.5) {
+    turn(-PI / 2.7);
+    drive(255);
+    double currentY = Enes100Simulation.location.y;
+    while (currentY > 0.4) {
+      updateLocation();
+      currentY = Enes100Simulation.location.y;
+    }
   }
 
   stop();
