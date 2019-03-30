@@ -27,7 +27,8 @@ void setup() {
 }
 
 void loop() {
-  if (Enes100Simulation.readDistanceSensor(1) < 0.1) {
+  if (Enes100Simulation.readDistanceSensor(0) < 0.1 ||
+      Enes100Simulation.readDistanceSensor(2) < 0.1) {
     goAroundObstacle();
   }
 
@@ -54,14 +55,10 @@ void loop() {
     // move forward
     drive(255);
 
-    Enes100Simulation.println(Enes100Simulation.readDistanceSensor(1));
-
-    if (Enes100Simulation.readDistanceSensor(1) > 0.1) {
-      if (getDistToDest() < 0.5) {
-        delay(100);
-      } else {
-        delay(1000);
-      }
+    if (getDistToDest() < 0.5) {
+      delay(100);
+    } else {
+      delay(1000);
     }
 
     // stop motors
@@ -103,16 +100,30 @@ void goAroundObstacle() {
 
   Enes100Simulation.println(Enes100Simulation.location.y);
 
+  double rightSensor = Enes100Simulation.readDistanceSensor(2);
+  double leftSensor = Enes100Simulation.readDistanceSensor(0);
+
   // back up a bit
   drive(-255);
   delay(500);
 
+  double offset = 0;
+
   if (Enes100Simulation.location.y > ARENA_HEIGHT / 2) {
     // go down and around
-    turn(-PI / 2 + PI / 8);
+    if (rightSensor > 0.1) {
+      // Give an angle if right sensor is clear
+      offset = PI / 8;
+    }
+    turn(-PI / 2 + offset);
   } else {
     // go up and around
-    turn(PI / 2 - PI / 8);
+    if (leftSensor > 0.1) {
+      // Give an angle if right sensor is clear
+      offset = PI / 8;
+    }
+
+    turn(PI / 2 - offset);
   }
 
   // move forward
