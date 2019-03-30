@@ -2,8 +2,12 @@
 #include <Enes100Simulation.h>
 #include <TankSimulation.h>
 
+#define ARENA_HEIGHT 2
+#define ARENA_WIDTH 4
+
 double getAngleToDest();
 double getDistToDest();
+void goAroundObstacle();
 
 void setup() {
   TankSimulation.begin();
@@ -19,6 +23,10 @@ void setup() {
 }
 
 void loop() {
+  if (Enes100Simulation.readDistanceSensor(1) < 0.1) {
+    goAroundObstacle();
+  }
+
   double targetAngle = getAngleToDest();
 
   if (getDistToDest() > 0.1) {
@@ -57,8 +65,7 @@ void loop() {
 
     Enes100Simulation.println(Enes100Simulation.readDistanceSensor(1));
 
-    if (Enes100Simulation.readDistanceSensor(1) > 0.1 ||
-        Enes100Simulation.readDistanceSensor(1) == 0) {
+    if (Enes100Simulation.readDistanceSensor(1) > 0.1) {
       if (getDistToDest() < 0.5) {
         delay(100);
       } else {
@@ -99,4 +106,49 @@ double getDistToDest() {
       Enes100Simulation.location.y - Enes100Simulation.destination.y;
 
   return sqrt(pow(deltaX, 2) + pow(deltaY, 2));
+}
+
+void goAroundObstacle() {
+  Enes100Simulation.println("Avoiding Obstacle");
+
+  Enes100Simulation.println(Enes100Simulation.location.y);
+
+  // back up a bit
+
+  TankSimulation.setLeftMotorPWM(-255);
+  TankSimulation.setRightMotorPWM(-255);
+
+  delay(500);
+
+  if (Enes100Simulation.location.y > ARENA_HEIGHT / 2) {
+    // go down and around
+    while (abs(Enes100Simulation.location.theta + PI / 2 - PI / 8) > 0.1) {
+      Enes100Simulation.println(Enes100Simulation.location.theta);
+      TankSimulation.setLeftMotorPWM(255);
+      TankSimulation.setRightMotorPWM(-255);
+      while (!Enes100Simulation.updateLocation()) {
+        Enes100Simulation.println("Unable to update location");
+      }
+    }
+
+  } else {
+    // go up and around
+    while (abs(Enes100Simulation.location.theta - PI / 2 + PI / 8) > 0.1) {
+      Enes100Simulation.println(Enes100Simulation.location.theta);
+      TankSimulation.setLeftMotorPWM(-255);
+      TankSimulation.setRightMotorPWM(255);
+      while (!Enes100Simulation.updateLocation()) {
+        Enes100Simulation.println("Unable to update location");
+      }
+    }
+  }
+
+  // move forward
+  TankSimulation.setLeftMotorPWM(255);
+  TankSimulation.setRightMotorPWM(255);
+
+  delay(3000);
+
+  TankSimulation.setLeftMotorPWM(0);
+  TankSimulation.setRightMotorPWM(0);
 }
