@@ -9,6 +9,8 @@ double getAngleToDest();
 double getDistToDest();
 void goAroundObstacle();
 
+void updateLocation();
+
 void stop();
 void turn(double targetAngle);
 void drive(int speed);
@@ -21,15 +23,11 @@ void setup() {
 
   Enes100Simulation.println("Starting Navigation");
 
-  while (!Enes100Simulation.updateLocation()) {
-    Enes100Simulation.println("Unable to update Location");
-  }
+  updateLocation();
 }
 
 void loop() {
-  while (!Enes100Simulation.updateLocation()) {
-    Enes100Simulation.println("Unable to update Location");
-  }
+  updateLocation();
 
   Enes100Simulation.print("Current X: ");
   Enes100Simulation.println(Enes100Simulation.location.x);
@@ -39,22 +37,22 @@ void loop() {
   if (Enes100Simulation.location.x < 1 && Enes100Simulation.location.y > 0.45) {
     turn(-PI / 2);
     drive(255);
-    delay(1000);
+    while (Enes100Simulation.location.y > 0.45) {
+      updateLocation();
+    }
     stop();
   } else if (Enes100Simulation.location.x < 3) {
     turn(0);
     drive(255);
-    while (Enes100Simulation.readDistanceSensor(0) > 0.3 &&
-           Enes100Simulation.readDistanceSensor(2) > 0.3 &&
+    while (Enes100Simulation.readDistanceSensor(0) > 0.25 &&
+           Enes100Simulation.readDistanceSensor(2) > 0.25 &&
            Enes100Simulation.location.x < 3) {
-      while (!Enes100Simulation.updateLocation()) {
-        Enes100Simulation.println("Unable to update Location");
-      }
+      updateLocation();
     }
 
     stop();
-    if (Enes100Simulation.readDistanceSensor(0) <= 0.3 ||
-        Enes100Simulation.readDistanceSensor(2) <= 0.3) {
+    if (Enes100Simulation.readDistanceSensor(0) <= 0.25 ||
+        Enes100Simulation.readDistanceSensor(2) <= 0.25) {
       goAroundObstacle();
     }
   } else {
@@ -95,8 +93,7 @@ void loop() {
 }
 
 double getAngleToDest() {
-  // TODO: add checks to make sure location can be updated
-  Enes100Simulation.updateLocation();
+  updateLocation();
   double deltaX =
       Enes100Simulation.location.x - Enes100Simulation.destination.x;
   double deltaY =
@@ -127,16 +124,12 @@ void goAroundObstacle() {
   Enes100Simulation.println("Avoiding Obstacle");
   turn(PI / 4);
   drive(255);
-  while (!Enes100Simulation.updateLocation()) {
-    Enes100Simulation.println("Unable to update Location");
-  }
+  updateLocation();
   double currentX = Enes100Simulation.location.x;
   double targetX = currentX + 0.55;
 
   while (currentX < targetX) {
-    while (!Enes100Simulation.updateLocation()) {
-      Enes100Simulation.println("Unable to update Location");
-    }
+    updateLocation();
     currentX = Enes100Simulation.location.x;
     delay(100);
   }
@@ -145,9 +138,7 @@ void goAroundObstacle() {
   drive(255);
   double currentY = Enes100Simulation.location.y;
   while (currentY > 0.4) {
-    while (!Enes100Simulation.updateLocation()) {
-      Enes100Simulation.println("Unable to update Location");
-    }
+    updateLocation();
     currentY = Enes100Simulation.location.y;
   }
 
@@ -169,12 +160,16 @@ void turn(double targetAngle) {
       TankSimulation.setRightMotorPWM(255);
     }
 
-    while (!Enes100Simulation.updateLocation()) {
-      Enes100Simulation.println("Unable to update location");
-    }
+    updateLocation();
   }
 }
 void drive(int speed) {
   TankSimulation.setLeftMotorPWM(speed);
   TankSimulation.setRightMotorPWM(speed);
+}
+
+void updateLocation() {
+  while (!Enes100Simulation.updateLocation()) {
+    Enes100Simulation.println("Unable to update location");
+  }
 }
