@@ -122,15 +122,33 @@ double getDistToDest() {
 
 void goAroundObstacle() {
   Enes100Simulation.println("Avoiding Obstacle");
+  updateLocation();
   turn(PI / 4);
   drive(255);
   updateLocation();
+
   double currentX = Enes100Simulation.location.x;
   double targetX = currentX + 0.55;
+
+  int offset = 0;
 
   while (currentX < targetX) {
     updateLocation();
     currentX = Enes100Simulation.location.x;
+    if (Enes100Simulation.location.y < ARENA_WIDTH / 3) {
+      if (Enes100Simulation.readDistanceSensor(0) >
+              Enes100Simulation.readDistanceSensor(2) &&
+          Enes100Simulation.readDistanceSensor(2) < 0.3) {
+        offset += PI / 20;
+        turn(PI / 4 + offset);
+      } else if (Enes100Simulation.readDistanceSensor(0) <
+                     Enes100Simulation.readDistanceSensor(2) &&
+                 Enes100Simulation.readDistanceSensor(0) < 0.3) {
+        offset -= PI / 20;
+        turn(PI / 4 + offset);
+      }
+    }
+
     delay(100);
   }
   stop();
@@ -149,6 +167,7 @@ void stop() {
   TankSimulation.setLeftMotorPWM(0);
   TankSimulation.setRightMotorPWM(0);
 }
+
 void turn(double targetAngle) {
   // TODO: this is too reliant on the vision system
   while (abs(Enes100Simulation.location.theta - targetAngle) > 0.05) {
@@ -163,6 +182,7 @@ void turn(double targetAngle) {
     updateLocation();
   }
 }
+
 void drive(int speed) {
   TankSimulation.setLeftMotorPWM(speed);
   TankSimulation.setRightMotorPWM(speed);
