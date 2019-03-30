@@ -9,6 +9,10 @@ double getAngleToDest();
 double getDistToDest();
 void goAroundObstacle();
 
+void stop();
+void turn(double targetAngle);
+void drive(int speed);
+
 void setup() {
   TankSimulation.begin();
   while (!Enes100Simulation.begin()) {
@@ -45,23 +49,10 @@ void loop() {
     Enes100Simulation.println(targetAngle * 180 / PI);
 
     // turn to face destination
-    while (abs(Enes100Simulation.location.theta - targetAngle) > 0.05) {
-      if (Enes100Simulation.location.theta - targetAngle > 0) {
-        TankSimulation.setLeftMotorPWM(255);
-        TankSimulation.setRightMotorPWM(-255);
-      } else {
-        TankSimulation.setLeftMotorPWM(-255);
-        TankSimulation.setRightMotorPWM(255);
-      }
-
-      while (!Enes100Simulation.updateLocation()) {
-        Enes100Simulation.println("Unable to update location");
-      }
-    }
+    turn(targetAngle);
 
     // move forward
-    TankSimulation.setLeftMotorPWM(255);
-    TankSimulation.setRightMotorPWM(255);
+    drive(255);
 
     Enes100Simulation.println(Enes100Simulation.readDistanceSensor(1));
 
@@ -73,9 +64,8 @@ void loop() {
       }
     }
 
-    // stop
-    TankSimulation.setLeftMotorPWM(0);
-    TankSimulation.setRightMotorPWM(0);
+    // stop motors
+    stop();
   }
 }
 
@@ -114,41 +104,44 @@ void goAroundObstacle() {
   Enes100Simulation.println(Enes100Simulation.location.y);
 
   // back up a bit
-
-  TankSimulation.setLeftMotorPWM(-255);
-  TankSimulation.setRightMotorPWM(-255);
-
+  drive(-255);
   delay(500);
 
   if (Enes100Simulation.location.y > ARENA_HEIGHT / 2) {
     // go down and around
-    while (abs(Enes100Simulation.location.theta + PI / 2 - PI / 8) > 0.1) {
-      Enes100Simulation.println(Enes100Simulation.location.theta);
-      TankSimulation.setLeftMotorPWM(255);
-      TankSimulation.setRightMotorPWM(-255);
-      while (!Enes100Simulation.updateLocation()) {
-        Enes100Simulation.println("Unable to update location");
-      }
-    }
-
+    turn(-PI / 2 + PI / 8);
   } else {
     // go up and around
-    while (abs(Enes100Simulation.location.theta - PI / 2 + PI / 8) > 0.1) {
-      Enes100Simulation.println(Enes100Simulation.location.theta);
-      TankSimulation.setLeftMotorPWM(-255);
-      TankSimulation.setRightMotorPWM(255);
-      while (!Enes100Simulation.updateLocation()) {
-        Enes100Simulation.println("Unable to update location");
-      }
-    }
+    turn(PI / 2 - PI / 8);
   }
 
   // move forward
-  TankSimulation.setLeftMotorPWM(255);
-  TankSimulation.setRightMotorPWM(255);
-
+  drive(255);
   delay(3000);
+  stop();
+}
 
+void stop() {
   TankSimulation.setLeftMotorPWM(0);
   TankSimulation.setRightMotorPWM(0);
+}
+void turn(double targetAngle) {
+  // TODO: this is too reliant on the vision system
+  while (abs(Enes100Simulation.location.theta - targetAngle) > 0.05) {
+    if (Enes100Simulation.location.theta - targetAngle > 0) {
+      TankSimulation.setLeftMotorPWM(255);
+      TankSimulation.setRightMotorPWM(-255);
+    } else {
+      TankSimulation.setLeftMotorPWM(-255);
+      TankSimulation.setRightMotorPWM(255);
+    }
+
+    while (!Enes100Simulation.updateLocation()) {
+      Enes100Simulation.println("Unable to update location");
+    }
+  }
+}
+void drive(int speed) {
+  TankSimulation.setLeftMotorPWM(speed);
+  TankSimulation.setRightMotorPWM(speed);
 }
