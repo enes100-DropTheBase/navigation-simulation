@@ -13,7 +13,7 @@ void updateLocation();
 
 void stop();
 void turn(double targetAngle);
-void drive(int speed);
+void moveForward(int speed);
 
 void setup() {
   TankSimulation.begin();
@@ -35,29 +35,32 @@ void loop() {
   Enes100Simulation.println(Enes100Simulation.location.y);
 
   if (Enes100Simulation.location.x < 1 && Enes100Simulation.location.y > 0.45) {
+    // Go to the bottom corner
     turn(-PI / 2);
-    drive(255);
+    moveForward(255);
     while (Enes100Simulation.location.y > 0.45) {
+      // TODO: make it slow down when getting close
       updateLocation();
     }
     stop();
   } else if (Enes100Simulation.location.x < 3) {
+    // Go across the bottom
     turn(0);
-    drive(255);
-    while (Enes100Simulation.readDistanceSensor(0) > 0.25 &&
-           Enes100Simulation.readDistanceSensor(2) > 0.25 &&
-           Enes100Simulation.location.x < 3) {
+    moveForward(255);
+    while (  // rightSonar.ping_cm() > 0.25 && leftSonar.ping_cm() > 0.25 &&
+        Enes100Simulation.location.x < 3) {
       updateLocation();
+      // TODO: periodically recheck angle and adjust if off course
     }
 
     stop();
-    if (Enes100Simulation.readDistanceSensor(0) <= 0.25 ||
-        Enes100Simulation.readDistanceSensor(2) <= 0.25) {
-      goAroundObstacle();
-    }
+    // if (rightSonar.ping_cm() <= 0.25 || leftSonar.ping_cm() <= 0.25) {
+    //   goAroundObstacle();
+    // }
   } else {
     double targetAngle = getAngleToDest();
     if (getDistToDest() > 0.1) {
+      // Go to the destination
       if (Enes100Simulation.location.x > Enes100Simulation.destination.x) {
         if (targetAngle < 0) {
           targetAngle += PI;
@@ -76,7 +79,7 @@ void loop() {
       turn(targetAngle);
 
       // move forward
-      drive(255);
+      moveForward(255);
 
       if (getDistToDest() < 0.5) {
         delay(100);
@@ -110,8 +113,7 @@ double getAngleToDest() {
 }
 
 double getDistToDest() {
-  // TODO: add checks to make sure location can be updated
-  Enes100Simulation.updateLocation();
+  updateLocation();
   double deltaX =
       Enes100Simulation.location.x - Enes100Simulation.destination.x;
   double deltaY =
@@ -124,32 +126,30 @@ void goAroundObstacle() {
   Enes100Simulation.println("Avoiding Obstacle");
   updateLocation();
   turn(PI / 4);
-  drive(255);
+  moveForward(255);
   updateLocation();
 
   double currentX = Enes100Simulation.location.x;
   double targetX = currentX + 0.55;
 
-  int offset = 0;
+  // int offset = 0;
 
   while (currentX < targetX) {
     updateLocation();
     currentX = Enes100Simulation.location.x;
-    if (Enes100Simulation.location.y < ARENA_WIDTH / 3) {
-      if (Enes100Simulation.readDistanceSensor(0) >
-              Enes100Simulation.readDistanceSensor(2) &&
-          Enes100Simulation.readDistanceSensor(2) < 0.2) {
-        offset += PI / 20;
-        Enes100Simulation.println("Compensating left");
-        turn(PI / 4 + offset);
-      } else if (Enes100Simulation.readDistanceSensor(0) <
-                     Enes100Simulation.readDistanceSensor(2) &&
-                 Enes100Simulation.readDistanceSensor(0) < 0.2) {
-        Enes100Simulation.println("Compensating right");
-        offset -= PI / 20;
-        turn(PI / 4 + offset);
-      }
-    }
+    // if (Enes100Simulation.location.y < ARENA_WIDTH / 3) {
+    //   if (rightSonar.ping_cm() > leftSonar.ping_cm() &&
+    //       leftSonar.ping_cm() < 0.2) {
+    //     offset += PI / 20;
+    //     Enes100Simulation.println("Compensating left");
+    //     turn(PI / 4 + offset);
+    //   } else if (rightSonar.ping_cm() < leftSonar.ping_cm() &&
+    //              rightSonar.ping_cm() < 0.2) {
+    //     Enes100Simulation.println("Compensating right");
+    //     offset -= PI / 20;
+    //     turn(PI / 4 + offset);
+    //   }
+    // }
 
     delay(100);
   }
@@ -163,7 +163,7 @@ void goAroundObstacle() {
 
   if (Enes100Simulation.location.x < 2.5) {
     turn(-PI / 2.7);
-    drive(255);
+    moveForward(255);
     double currentY = Enes100Simulation.location.y;
     while (currentY > 0.4) {
       updateLocation();
@@ -179,24 +179,45 @@ void stop() {
   TankSimulation.setRightMotorPWM(0);
 }
 
-void turn(double targetAngle) {
-  // TODO: this is too reliant on the vision system
-  while (abs(Enes100Simulation.location.theta - targetAngle) > 0.05) {
-    if (Enes100Simulation.location.theta - targetAngle > 0) {
-      TankSimulation.setLeftMotorPWM(255);
-      TankSimulation.setRightMotorPWM(-255);
-    } else {
-      TankSimulation.setLeftMotorPWM(-255);
-      TankSimulation.setRightMotorPWM(255);
-    }
-
-    updateLocation();
-  }
+void turnRight(int speed) {
+  TankSimulation.setLeftMotorPWM(speed);
+  TankSimulation.setRightMotorPWM(-speed);
 }
 
-void drive(int speed) {
+void turnLeft(int speed) {
+  TankSimulation.setLeftMotorPWM(-speed);
+  TankSimulation.setRightMotorPWM(speed);
+}
+
+void moveForward(int speed) {
   TankSimulation.setLeftMotorPWM(speed);
   TankSimulation.setRightMotorPWM(speed);
+}
+
+void turn(double targetAngle) {
+  updateLocation();
+  // Enes100Simulation.print("Difference");
+  // Enes100Simulation.println(fabs(Enes100Simulation.location.theta -
+  // targetAngle));
+  // TODO: this is too reliant on the vision system
+  double angleDifference = fabs(Enes100Simulation.location.theta - targetAngle);
+  while (angleDifference > 0.09) {
+    int speed = 200;
+    if (angleDifference < 0.3) {
+      speed = 125;
+    }
+    if (Enes100Simulation.location.theta - targetAngle > 0) {
+      turnRight(speed);
+    } else {
+      turnLeft(speed);
+    }
+    delay(100);
+    stop();
+
+    updateLocation();
+
+    angleDifference = fabs(Enes100Simulation.location.theta - targetAngle);
+  }
 }
 
 void updateLocation() {
