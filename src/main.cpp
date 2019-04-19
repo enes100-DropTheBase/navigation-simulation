@@ -97,50 +97,28 @@ void loop() {
       Enes100Simulation.println(status.c_str());
       goAroundObstacle();
     }
-  } else if (Enes100Simulation.location.x < 4 &&
-             Enes100Simulation.location.x >= 3 && getDistToDest() > 0.2) {
+  } else if (Enes100Simulation.location.x < 4 && Enes100Simulation.location.x >= 3 &&
+             getDistToDest() > 0.1) {
     status = "Going to destination";
     Enes100Simulation.println(status.c_str());
-    turn(0);
-
-    while (Enes100Simulation.location.x < Enes100Simulation.destination.x) {
-      stop();
-      updateLocation();
-      moveForward(255);
-      delay(200);
-      stop();
-      // TODO: periodically recheck angle and adjust if off course
-    }
-    Enes100Simulation.print("Dest y: ");
-    Enes100Simulation.println(Enes100Simulation.destination.y);
-    Enes100Simulation.print("OSV y: ");
-    Enes100Simulation.println(Enes100Simulation.location.y);
-
-    // TODO: go backwards if overshot
-    if (Enes100Simulation.destination.y > Enes100Simulation.location.y) {
-      Enes100Simulation.println("Destination Above");
-      turn(PI / 2);
-    } else {
-      Enes100Simulation.println("Destination Below");
-      turn(-PI / 2);
-    }
-    status = "Going to destination vertically";
-    while (fabs(Enes100Simulation.destination.y -
-                Enes100Simulation.location.y) > 0.2) {
+    double targetAngle = getAngleToDest();
+    if (getDistToDest() > 0.1) {
+      // Go to the destination
+      Enes100Simulation.print("Distance to destination: ");
+      Enes100Simulation.println(getDistToDest());
+      Enes100Simulation.print("Target Angle: ");
+      Enes100Simulation.println(targetAngle * 180 / PI);
+      // turn to face destination
+      turn(targetAngle);
       // move forward
       moveForward(255);
-
-      if (fabs(Enes100Simulation.destination.y - Enes100Simulation.location.y) <
-          0.5) {
-        moveForward(200);
+      if (getDistToDest() < 0.5) {
         delay(100);
       } else {
-        delay(200);
+        delay(300);
       }
-
       // stop motors
       stop();
-      updateLocation();
     }
   }
 
