@@ -150,14 +150,14 @@ void loop() {
 double getAngleToDest() {
   updateLocation();
   double deltaX =
-      Enes100Simulation.location.x - Enes100Simulation.destination.x;
+      Enes100Simulation.destination.x - Enes100Simulation.location.x;
   double deltaY =
-      Enes100Simulation.location.y - Enes100Simulation.destination.y;
+      Enes100Simulation.destination.y - Enes100Simulation.location.y;
 
   // Enes100Simulation.println(deltaX);
   // Enes100Simulation.println(deltaY);
 
-  double angle = atan(deltaY / deltaX);
+  double angle = atan2(deltaY, deltaX);
 
   // Enes100Simulation.println(angle);
 
@@ -178,18 +178,26 @@ void goAroundObstacle() {
   status = "Avoiding Obstacle";
   Enes100Simulation.println("Avoiding Obstacle");
   stop();
-  updateLocation();
 
-  turn(PI / 4);
   updateLocation();
 
   double currentX = Enes100Simulation.location.x;
   double currentY = Enes100Simulation.location.y;
 
-  double targetX = currentX + 0.75;
+  double targetX = currentX + 0.4;
   double targetY = 0.7;
 
-  // int offset = 0;
+  double angle = atan2(targetY - currentY, targetX - currentX);
+
+  Enes100Simulation.print("Angle obstacle: ");
+  Enes100Simulation.println(angle);
+
+  turn(angle);
+
+  updateLocation();
+
+  targetX = currentX + 0.75;
+  targetY = 0.7;
 
   while (currentY < targetY) {
     stop();
