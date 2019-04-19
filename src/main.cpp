@@ -60,7 +60,7 @@ void loop() {
       stop();
       updateLocation();
       moveForward(255);
-      delay(100);
+      delay(200);
     }
     stop();
   } else if (Enes100Simulation.location.x < 3) {
@@ -87,7 +87,7 @@ void loop() {
 
       moveForward(255);
 
-      delay(200);
+      delay(300);
       // TODO: periodically recheck angle and adjust if off course
     }
 
@@ -163,7 +163,7 @@ void goAroundObstacle() {
   double currentY = Enes100Simulation.location.y;
 
   double targetX = currentX + 0.4;
-  double targetY = 0.7;
+  double targetY = 0.75;
 
   double angle = atan2(targetY - currentY, targetX - currentX);
 
@@ -174,7 +174,7 @@ void goAroundObstacle() {
 
   updateLocation();
 
-  targetX = currentX + 0.75;
+  targetX = currentX + 0.9;
   targetY = 0.7;
 
   while (currentY < targetY) {
@@ -214,6 +214,9 @@ void goAroundObstacle() {
     while (currentY > 0.4) {
       updateLocation();
       currentY = Enes100Simulation.location.y;
+      moveForward(255);
+      delay(100);
+      stop();
     }
   }
 
