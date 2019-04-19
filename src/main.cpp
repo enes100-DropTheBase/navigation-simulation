@@ -15,6 +15,11 @@ void stop();
 void turn(double targetAngle);
 void moveForward(int speed);
 
+float pingLeft();
+float pingRight();
+
+String status = "";
+
 void setup() {
   TankSimulation.begin();
   while (!Enes100Simulation.begin()) {
@@ -27,7 +32,16 @@ void setup() {
 }
 
 void loop() {
+  stop();
+#ifdef SERIAL_DEBUG
+  Serial.print("Right: ");
+  Serial.println(Enes100Simulation.readDistanceSensor(2));
+  Serial.print("Left: ");
+  Serial.println(Enes100Simulation.readDistanceSensor(0));
+#endif
+
   updateLocation();
+  status = "";
 
   Enes100Simulation.print("Current X: ");
   Enes100Simulation.println(Enes100Simulation.location.x);
@@ -36,59 +50,97 @@ void loop() {
 
   if (Enes100Simulation.location.x < 1 && Enes100Simulation.location.y > 0.45) {
     // Go to the bottom corner
+    status = "Going to bottom corner";
+    Enes100Simulation.println(status.c_str());
+
     turn(-PI / 2);
     moveForward(255);
     while (Enes100Simulation.location.y > 0.45) {
       // TODO: make it slow down when getting close
+      stop();
       updateLocation();
+      moveForward(255);
+      delay(100);
     }
     stop();
   } else if (Enes100Simulation.location.x < 3) {
-    // Go across the bottom
+    status = "Going across bottom";
+    Enes100Simulation.println(status.c_str());
     turn(0);
     moveForward(255);
-    while (  // rightSonar.ping_cm() > 0.25 && leftSonar.ping_cm() > 0.25 &&
-        Enes100Simulation.location.x < 3) {
+    Enes100Simulation.print("Right: ");
+    Enes100Simulation.println(Enes100Simulation.readDistanceSensor(2));
+    Enes100Simulation.print("Left: ");
+    Enes100Simulation.println(Enes100Simulation.readDistanceSensor(0));
+    while (Enes100Simulation.location.x < 1 ||
+           ((pingLeft() > 50 || pingLeft() == 0) &&
+            (pingRight() > 50 || pingRight() == 0) &&
+            Enes100Simulation.location.x < 3)) {
+      stop();
+
+      Enes100Simulation.print("Right: ");
+      Enes100Simulation.println(pingRight());
+      Enes100Simulation.print("Left: ");
+      Enes100Simulation.println(pingLeft());
+
       updateLocation();
+
+      moveForward(255);
+
+      delay(200);
       // TODO: periodically recheck angle and adjust if off course
     }
 
     stop();
-    // if (rightSonar.ping_cm() <= 0.25 || leftSonar.ping_cm() <= 0.25) {
-    //   goAroundObstacle();
-    // }
-  } else {
-    double targetAngle = getAngleToDest();
-    if (getDistToDest() > 0.1) {
-      // Go to the destination
-      if (Enes100Simulation.location.x > Enes100Simulation.destination.x) {
-        if (targetAngle < 0) {
-          targetAngle += PI;
-        } else {
-          targetAngle -= PI;
-        }
-      }
+    if (pingLeft() <= 50 || pingRight() <= 50) {
+      status = "Going around obstacle";
+      Enes100Simulation.println(status.c_str());
+      goAroundObstacle();
+    }
+  } else if (Enes100Simulation.location.x < 4 &&
+             Enes100Simulation.location.x >= 3 && getDistToDest() > 0.2) {
+    status = "Going to destination";
+    Enes100Simulation.println(status.c_str());
+    turn(0);
 
-      Enes100Simulation.print("Distance to destination: ");
-      Enes100Simulation.println(getDistToDest());
+    while (Enes100Simulation.location.x < Enes100Simulation.destination.x) {
+      stop();
+      updateLocation();
+      moveForward(255);
+      delay(200);
+      stop();
+      // TODO: periodically recheck angle and adjust if off course
+    }
+    Enes100Simulation.print("Dest y: ");
+    Enes100Simulation.println(Enes100Simulation.destination.y);
+    Enes100Simulation.print("OSV y: ");
+    Enes100Simulation.println(Enes100Simulation.location.y);
 
-      Enes100Simulation.print("Target Angle: ");
-      Enes100Simulation.println(targetAngle * 180 / PI);
-
-      // turn to face destination
-      turn(targetAngle);
-
+    // TODO: go backwards if overshot
+    if (Enes100Simulation.destination.y > Enes100Simulation.location.y) {
+      Enes100Simulation.println("Destination Above");
+      turn(PI / 2);
+    } else {
+      Enes100Simulation.println("Destination Below");
+      turn(-PI / 2);
+    }
+    status = "Going to destination vertically";
+    while (fabs(Enes100Simulation.destination.y -
+                Enes100Simulation.location.y) > 0.2) {
       // move forward
       moveForward(255);
 
-      if (getDistToDest() < 0.5) {
+      if (fabs(Enes100Simulation.destination.y - Enes100Simulation.location.y) <
+          0.5) {
+        moveForward(200);
         delay(100);
       } else {
-        delay(1000);
+        delay(200);
       }
 
       // stop motors
       stop();
+      updateLocation();
     }
   }
 
@@ -123,36 +175,44 @@ double getDistToDest() {
 }
 
 void goAroundObstacle() {
+  status = "Avoiding Obstacle";
   Enes100Simulation.println("Avoiding Obstacle");
+  stop();
   updateLocation();
+
   turn(PI / 4);
-  moveForward(255);
   updateLocation();
 
   double currentX = Enes100Simulation.location.x;
-  double targetX = currentX + 0.55;
+  double currentY = Enes100Simulation.location.y;
+
+  double targetX = currentX + 0.75;
+  double targetY = 0.7;
 
   // int offset = 0;
 
-  while (currentX < targetX) {
+  while (currentY < targetY) {
+    stop();
     updateLocation();
-    currentX = Enes100Simulation.location.x;
-    // if (Enes100Simulation.location.y < ARENA_WIDTH / 3) {
-    //   if (rightSonar.ping_cm() > leftSonar.ping_cm() &&
-    //       leftSonar.ping_cm() < 0.2) {
-    //     offset += PI / 20;
-    //     Enes100Simulation.println("Compensating left");
-    //     turn(PI / 4 + offset);
-    //   } else if (rightSonar.ping_cm() < leftSonar.ping_cm() &&
-    //              rightSonar.ping_cm() < 0.2) {
-    //     Enes100Simulation.println("Compensating right");
-    //     offset -= PI / 20;
-    //     turn(PI / 4 + offset);
-    //   }
-    // }
-
+    currentY = Enes100Simulation.location.y;
+    moveForward(255);
     delay(100);
   }
+
+  turn(0);
+
+  updateLocation();
+
+  currentX = Enes100Simulation.location.x;
+
+  while (currentX < targetX) {
+    stop();
+    updateLocation();
+    currentX = Enes100Simulation.location.x;
+    moveForward(255);
+    delay(100);
+  }
+
   stop();
   updateLocation();
 
@@ -201,10 +261,10 @@ void turn(double targetAngle) {
   // targetAngle));
   // TODO: this is too reliant on the vision system
   double angleDifference = fabs(Enes100Simulation.location.theta - targetAngle);
-  while (angleDifference > 0.09) {
+  while (angleDifference > 0.05) {
     int speed = 200;
     if (angleDifference < 0.3) {
-      speed = 125;
+      speed = 150;
     }
     if (Enes100Simulation.location.theta - targetAngle > 0) {
       turnRight(speed);
@@ -221,7 +281,33 @@ void turn(double targetAngle) {
 }
 
 void updateLocation() {
-  while (!Enes100Simulation.updateLocation()) {
-    Enes100Simulation.println("Unable to update location");
+  while (bool loc = !Enes100Simulation.updateLocation() ||
+                    Enes100Simulation.location.theta > 10 ||
+                    Enes100Simulation.location.x > 10 ||
+                    Enes100Simulation.location.y > 10 ||
+                    Enes100Simulation.location.x < 0.02 ||
+                    Enes100Simulation.location.y < -0.02 ||
+                    Enes100Simulation.location.theta < -10) {
+    if (!loc) {
+      Enes100Simulation.println("Invalid location");
+    } else {
+#ifdef DEBUG_UPDATE_LOCATION
+      Enes100Simulation.println("Unable to update location");
+#endif
+    }
+    delay(100);
   }
+  Enes100Simulation.print(status.c_str());
+  Enes100Simulation.print(": ");
+  Enes100Simulation.print("OSV is at (");
+  Enes100Simulation.print(Enes100Simulation.location.x);
+  Enes100Simulation.print(", ");
+  Enes100Simulation.print(Enes100Simulation.location.y);
+  Enes100Simulation.print(", ");
+  Enes100Simulation.print(Enes100Simulation.location.theta);
+  Enes100Simulation.println(")");
 }
+
+float pingLeft() { return Enes100Simulation.readDistanceSensor(0) * 100; }
+
+float pingRight() { return Enes100Simulation.readDistanceSensor(2) * 100; }
